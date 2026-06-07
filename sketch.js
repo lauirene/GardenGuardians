@@ -9,7 +9,7 @@ TODOs:
 
 // prevent elements from being on the edge of the screen
 let _screenPadding = 10;
-let _landStart = 200;
+let _landStart = 100;
 
 // general purpose values -> these can become part of
 // object state so that different objects have custom
@@ -34,17 +34,23 @@ let wave = 3;
 // invasive plant state
 let _invasiveR;
 let _invasiveL;
+let _tutorialR;
+let _tutorialL;
 
 // native plant state
 let garden;
 
 // attack timer
 let prevAttackTime = 0;
-let attackTimerLength = 500;  // 1 second
+const attackTimerLength = 500;  // 1 second
 
 // wave timer
 let prevWaveTime = 0;
-let waveTimerLength = 5000;
+const waveTimerLength = 5000;
+
+// game play timer
+let gamePlayTime = 0;
+const gamePlayLength = 2 * 60000; // max 2 min play time
 
 // AI controller
 let handPose;
@@ -107,13 +113,11 @@ function setup() {
   
   let spacing = getSpacing();
   _diameter = getSpacing();
-  
-  _invasiveR = new InvasiveRowManager(_numRows, spacing, _landStart, true, _diameter);
-  _invasiveL = new InvasiveRowManager(_numRows, spacing, _landStart, false, _diameter);
-  garden = new Garden(_numRows, nativeImgs, spacing, _landStart);
 
   createShears();
   createClouds();
+
+  setupGameStart();
 
   osc = new p5.Oscillator('sine');
 }
@@ -165,20 +169,64 @@ function draw() {
     gameMenu();
   } else if (_gameState == GAME_PLAY) {
     gamePlay();
+  } else if (_gameState == GAME_PAUSE) {
+    gamePause();
   } else if (_gameState == GAME_OVER) {
     gameOver();
   }
+
+  updateShears();
+  drawShears();
+}
+
+function setupGameStart() {
+  console.log(`setting up game start!`);
+  _gameState = GAME_MENU;
+
+  // add invasive plant to left and right side
+  _tutorialR = new Plant(3 * width/ 4, height * 0.75, _diameter, _shearsR.power * 3, invasiveImgs['blackberry']);
+  _tutorialL = new Plant(width/ 4, height * 0.75, _diameter, _shearsR.power * 3, invasiveImgs['blackberry'])
 }
 
 function gameMenu() {
-  
+  fill(0);
+  textAlign(CENTER);
+  textSize(40);
+  text(`Cut down the invasive\nplants to start!`, width / 2, height/3);
+  if (!_tutorialL.isDead()) {
+    _tutorialL.update();
+    _tutorialL.draw();
+  }
+  if (!_tutorialR.isDead()) {
+    _tutorialR.update();
+    _tutorialR.draw();
+  }
+}
+
+function gamePlaySetup() {
+  console.log(`setting up game play...`)
+  _gameState = GAME_PLAY;
+  // game play setup
+  let spacing = getSpacing();
+  garden = new Garden(_numRows, nativeImgs, spacing, _landStart);
+  _invasiveR = new InvasiveRowManager(_numRows, spacing, _landStart, -1, _diameter);
+  _invasiveL = new InvasiveRowManager(_numRows, spacing, _landStart, 1, _diameter);
+
+  // reset timers
+  let prevAttackTime = 0;
+  let prevWaveTime = 0;
+
+  // reset wave
+  wave = 3;
+
+  gamePlayTime = millis();
 }
 
 function gamePlay() {
   // Draw the webcam video
   // image(video, 0, 0, width, height);
-  
-  if (millis() - prevWaveTime > (waveTimerLength + wave * colSpacing)) {
+  console.log(`here!`)
+  if (_invasiveR.timeSinceWaveEnd() > waveTimerLength) {
     console.log(`wave ${wave}`)
     _invasiveR.generateWave(wave);
     _invasiveL.generateWave(wave);
@@ -205,16 +253,28 @@ function gamePlay() {
   garden.draw();
   drawScore();
   
-  updateShears();
-  drawShears();
-  
-  if (garden.getHealth() == 0) {
+  if (garden.getHealth() == 0 || millis() - gamePlayTime > gamePlayLength) {
     _gameState = GAME_OVER;
   }
 }
 
+function gamePause() {
+  fill(0);
+  textAlign(CENTER);
+  textSize(40);
+  text(`Press space to continue game`, width / 2, height/2);
+}
+
 function gameOver() {
-  
+  fill(0);
+  textAlign(CENTER);
+  textSize(30);
+  score = garden.getHealth();
+  if (score == 0) {
+    text(`Your garden is gone\ncut anywhere to try again`, width / 2, height / 2);
+  } else {
+    text(`Your garden survives!\nscore: ${score}\nut anywhere to try again`, width / 2, height/2);
+  }
 }
 
 function createShears() {
@@ -259,8 +319,24 @@ function updateShears() {
 // this function only applies damage to touching invasive plants
 // if the shear is cutting, otherwise nothing happens
 function shearsCut(shears, invasives) {
-  for (const rowIdx of getNearbyRowIdx(shears.y)) {
-    invasives.rows[rowIdx].damage(shears.x, shears.y, shears.d, shears.power);
+  if (_gameState == GAME_PLAY) {
+    for (const rowIdx of getNearbyRowIdx(shears.y)) {
+      invasives.rows[rowIdx].damage(shears.x, shears.y, shears.d, shears.power);
+    }
+  } else if (_gameState == GAME_MENU) {
+    let plant = _tutorialL;
+    if (shears.x > width / 2) {
+      plant = _tutorialR;
+    }
+    
+    if (plant.pos2Plant(shears.x, shears.y, shears.d, 0) == 0) {
+      plant.damage(shears.power);
+      if (_tutorialL.isDead() && _tutorialR.isDead()) {
+        gamePlaySetup();
+      }
+    }
+  } else if (_gameState == GAME_OVER) {
+    setupGameStart();
   }
 }
 
@@ -285,6 +361,16 @@ function gotHands(results) {
   hands = results;
 }
 
+function keyPressed() {
+  if (key === ' ') {
+    if (_gameState == GAME_PLAY) {
+      _gameState = GAME_PAUSE
+    } else if (_gameState == GAME_PAUSE) {
+      _gameState = GAME_PLAY 
+    }
+  }
+}
+
 /**
  * Called automatically by the browser through p5.js when mouse clicked
  */
@@ -296,10 +382,6 @@ function mouseClicked() {
   //   _shearsL.setCut();
   //   playCutSound();
   // }
-  
-  if (_gameState == GAME_MENU) {
-    _gameState = GAME_PLAY;
-  }
   
   _shearsL.setCut();
   shearsCut(_shearsL, _invasiveL);
