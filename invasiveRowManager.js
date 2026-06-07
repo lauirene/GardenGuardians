@@ -1,4 +1,4 @@
-const colSpacing= 1000; //change to column time spacing
+const colSpacing= 2000; //change to column time spacing
 const minInvasives = 2;
 const maxInvasives = 4;
 
@@ -13,7 +13,7 @@ class InvasiveRowManager {
     this.prevColTime = 0;
     this.level = 1;
     this.dir = dir;
-    this.speed = .25;
+    this.speed = .3;
     this.rows = 
       Array.from({ length: numRows }, (_, index) => 
                  new PlantRow((index * spacing) + startY + diameter / 2, diameter, dir, stopPoint, index));
@@ -36,7 +36,7 @@ class InvasiveRowManager {
   }
 
   timeSinceWaveEnd() {
-    return millis() - (this.waveStartTime + this.level *(this.rows[0].d / this.speed));
+    return millis() - (this.waveStartTime + this.level * (this.rows[0].d / this.speed));
   }
   
   update() {
