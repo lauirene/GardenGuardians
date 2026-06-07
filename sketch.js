@@ -11,6 +11,10 @@ TODOs:
 let _screenPadding = 10;
 let _landStart = 100;
 
+// serial
+let serialOptions = { baudRate: 115200  };
+let serial;
+
 // general purpose values -> these can become part of
 // object state so that different objects have custom
 // diameter, damge, etc values
@@ -22,9 +26,10 @@ let _numRows = 5;
 
 // game state
 const GAME_MENU = 0;
-const GAME_PLAY = 1;
-const GAME_PAUSE = 2;
-const GAME_OVER = 3;
+const GAME_PLAY_PLANTING = 1
+const GAME_PLAY_INVASION = 2;
+const GAME_PAUSE = 3;
+const GAME_OVER = 4;
 
 let _gameState = GAME_MENU;
 
@@ -127,6 +132,7 @@ function setup() {
   setupGameStart();
 
   osc = new p5.Oscillator('sine');
+  setupSerial();
 }
 
 function windowResized() {
@@ -174,7 +180,9 @@ function draw() {
   
   if (_gameState == GAME_MENU) {
     gameMenu();
-  } else if (_gameState == GAME_PLAY) {
+  } else if (_gameState == GAME_PLAY_PLANTING) {
+    gamePlayPlanting();
+  } else if (_gameState == GAME_PLAY_INVASION) {
     gamePlay();
   } else if (_gameState == GAME_PAUSE) {
     gamePause();
@@ -218,7 +226,7 @@ function gameMenu() {
 
 function gamePlaySetup() {
   console.log(`setting up game play...`)
-  _gameState = GAME_PLAY;
+  _gameState = GAME_PLAY_PLANTING;
   // game play setup
   let spacing = getSpacing();
   garden = new Garden(_numRows, nativeImgs, spacing, _landStart);
@@ -233,6 +241,11 @@ function gamePlaySetup() {
   wave = 3;
 
   gamePlayTime = millis();
+}
+
+function gamePlayPlanting() {
+  garden.draw();
+  drawScore();
 }
 
 function gamePlay() {
@@ -284,7 +297,7 @@ function gameOver() {
   textSize(30);
   score = garden.getHealth();
   if (score == 0) {
-    text(`Your garden is gone\ncut anywhere to try again`, width / 2, height / 2);
+    text(`GAME OVER\ncut anywhere to try again`, width / 2, height / 2);
   } else {
     text(`Your garden survives!\nscore: ${score}\nut anywhere to try again`, width / 2, height/2);
   }
@@ -298,6 +311,7 @@ function createShears() {
 
 function drawScore() {
   fill(0);
+  noStroke();
   textAlign(CENTER, TOP);
   textSize(30);
   text(`score: ${garden.getHealth()}`, width / 2, 10);
@@ -332,7 +346,7 @@ function updateShears() {
 // this function only applies damage to touching invasive plants
 // if the shear is cutting, otherwise nothing happens
 function shearsCut(shears, invasives) {
-  if (_gameState == GAME_PLAY) {
+  if (_gameState == GAME_PLAY_INVASION) {
     for (const rowIdx of getNearbyRowIdx(shears.y)) {
       invasives.rows[rowIdx].damage(shears.x, shears.y, shears.d, shears.power);
     }
@@ -351,6 +365,19 @@ function shearsCut(shears, invasives) {
   } else if (_gameState == GAME_OVER) {
     setupGameStart();
   }
+}
+
+function plant(plantName) {
+  if (_gameState == GAME_PLAY_PLANTING) {
+    garden.plant(plantName);
+    if (garden.currPlantingRow == _numRows) {
+      _gameState = GAME_PLAY_INVASION;
+    }
+  }
+}
+
+function getRowIdx(y) {
+  return Math.round((y - _landStart - _diameter/2) / getSpacing());
 }
 
 function getNearbyRowIdx(y) {
@@ -376,11 +403,17 @@ function gotHands(results) {
 
 function keyPressed() {
   if (key === ' ') {
-    if (_gameState == GAME_PLAY) {
-      _gameState = GAME_PAUSE
+    if (_gameState == GAME_PLAY_INVASION) {
+      _gameState = GAME_PAUSE;
     } else if (_gameState == GAME_PAUSE) {
-      _gameState = GAME_PLAY 
+      _gameState = GAME_PLAY_INVASION;
     }
+  } else if (key === 's') {
+    if (!serial.isOpen()) {
+      serial.connectAndOpen(null, serialOptions);
+    }
+  } else if (key === 'p') {
+    plant('salal');
   }
 }
 
@@ -467,5 +500,66 @@ function drawClouds() {
     ellipse(c.x + s * 0.45, c.y + s * 0.1, s * 1.1, s * 0.75);
     ellipse(c.x - s * 0.15, c.y - s * 0.3, s * 0.9, s * 0.7);
     ellipse(c.x + s * 0.2,  c.y - s * 0.2, s * 0.8, s * 0.65);
+  }
+}
+
+// serial functions
+function setupSerial() {
+  // Setup Web Serial using serial.js
+  serial = new Serial();
+  serial.on(SerialEvents.CONNECTION_OPENED, onSerialConnectionOpened);
+  serial.on(SerialEvents.CONNECTION_CLOSED, onSerialConnectionClosed);
+  serial.on(SerialEvents.DATA_RECEIVED, onSerialDataReceived);
+  serial.on(SerialEvents.ERROR_OCCURRED, onSerialErrorOccurred);
+
+  // If we have previously approved ports, attempt to connect with them
+  serial.autoConnectAndOpenPreviouslyApprovedPort(serialOptions);
+}
+
+async function serialWrite() {
+  if (serial.isOpen()) {
+    // Write out the data to serial
+    // serial.writeLine();
+  }
+}
+
+/**
+ * Callback function by serial.js when there is an error on web serial
+ * 
+ * @param {} eventSender 
+ */
+function onSerialErrorOccurred(eventSender, error) {
+  console.log("onSerialErrorOccurred", error);
+}
+
+/**
+ * Callback function by serial.js when web serial connection is opened
+ * 
+ * @param {} eventSender 
+ */
+function onSerialConnectionOpened(eventSender) {
+  console.log("onSerialConnectionOpened");
+}
+
+/**
+ * Callback function by serial.js when web serial connection is closed
+ * 
+ * @param {} eventSender 
+ */
+function onSerialConnectionClosed(eventSender) {
+  console.log("onSerialConnectionClosed");
+}
+
+/**
+ * Callback function serial.js when new web serial data is received
+ * 
+ * @param {*} eventSender 
+ * @param {String} newData new data received over serial
+ */
+function onSerialDataReceived(eventSender, newData) {
+  console.log("onSerialDataReceived", newData);
+  
+  if (!newData.startsWith("#")) {
+      plant(newData);
   }
 }

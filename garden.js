@@ -1,13 +1,23 @@
 class Garden {
-  constructor(numPlants, imageMap, spacing, startY) {
+  constructor(numPlants, imageMap, spacing) {
     this.images = imageMap;
     this.plants = new Array(numPlants);
-    this.numAlive = numPlants;
+
+    this.currPlantingRow = 0;
     
-    let nativeKeys = Object.keys(nativeImgs);
-    for (let i = 0; i < numPlants; i++) {
-      let imgs = imageMap[nativeKeys[i % nativeKeys.length]];
-      this.plants[i] = new NativePlant((i * spacing) + startY + _diameter/2, _diameter, imgs);
+    // let nativeKeys = Object.keys(nativeImgs);
+    // for (let i = 0; i < numPlants; i++) {
+    //   let imgs = imageMap[nativeKeys[i % nativeKeys.length]];
+    //   this.plants[i] = new NativePlant((i * spacing) + startY + _diameter/2, _diameter, imgs);
+    // }
+  }
+
+  plant(plantName) {
+    if (this.currPlantingRow < this.plants.length) {
+      let y = (this.currPlantingRow * getSpacing()) + _landStart + _diameter/2
+      this.plants[this.currPlantingRow] = 
+        new NativePlant(y, _diameter, nativeImgs[plantName]);
+      this.currPlantingRow += 1;
     }
   }
 
@@ -29,6 +39,15 @@ class Garden {
   }
   
   draw() {
+    if (_gameState == GAME_PLAY_PLANTING) {
+      //// change this to svg for dirt pile/box thingy // TODO
+      fill(64,41,5);
+      stroke(182,159,102);
+      strokeWeight(10);
+      let y = (this.currPlantingRow * getSpacing()) + _landStart + _diameter/2;
+      circle(width / 2, y, _diameter);
+      ////////////////////////////////////////////////////////
+    }
     for (const plant of this.plants) {
       if (plant) {
         plant.update();
