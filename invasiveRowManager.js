@@ -1,4 +1,4 @@
-const colSpacing= 500; //change to column time spacing
+const colSpacing= 1000; //change to column time spacing
 const minInvasives = 2;
 const maxInvasives = 4;
 
