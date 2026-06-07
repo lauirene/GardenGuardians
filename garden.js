@@ -7,10 +7,10 @@ class Garden {
     let nativeKeys = Object.keys(nativeImgs);
     for (let i = 0; i < numPlants; i++) {
       let imgs = imageMap[nativeKeys[i % nativeKeys.length]];
-      this.plants[i] = (new NativePlant(width / 2, (i * spacing) + startY + _diameter/2, _diameter, imgs));
+      this.plants[i] = new NativePlant((i * spacing) + startY + _diameter/2, _diameter, imgs);
     }
   }
-  
+
   damage(rowIdx, magnitude) {
     if (this.plants[rowIdx]) {
       this.plants[rowIdx].damage(magnitude);

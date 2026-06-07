@@ -26,7 +26,37 @@ class Plant {
       return { w: this.d * aspect, h: this.d };
     }
   }
+
+  circleEdgeDist(x, y, d) {
+    return this.circleEdgeDist2(this.x, this.y, this.d, x, y, d);
+  }
   
+  circleEdgeDist2(x1, y1, d1, x2, y2, d2) {
+    let centerDist = dist(x1, y1, x2, y2);
+    
+    let edgeDist = centerDist - ((d1 + d2) / 2);
+    return max(0, edgeDist);
+  }
+  
+  pos2Plant(x, y, d, dir) {
+    let currDist = this.circleEdgeDist(x, y, d);
+    if (currDist == 0) {
+      return 0;
+    } else if (currDist < 
+        this.circleEdgeDist2(dir + this.x, 
+                       this.y, this.d, x, y, d)) {
+      return -1 * currDist;
+    } else {
+      return currDist;
+    }
+  }
+  
+  update() {
+    if (frameCount % 20 === 0) {
+      this.frameIndex = (this.frameIndex + 1) % this.imgs.length;
+    }
+  }
+
   draw() {
     if (!this.imgs || this.imgs.length === 0) {
       fill(0);
@@ -42,14 +72,8 @@ class Plant {
 }
 
 class NativePlant extends Plant {
-  constructor(x, y, d, imgs) {
-    super(x, y, d, 100, imgs);
-  }
-  
-  update() {
-    if (frameCount % 20 === 0) {
-      this.frameIndex = (this.frameIndex + 1) % this.imgs.length;
-    }
+  constructor(y, d, imgs) {
+    super(width / 2, y, d, 100, imgs);
   }
   
   draw() {
@@ -60,22 +84,19 @@ class NativePlant extends Plant {
 }
 
 class InvasivePlant extends Plant {
-  constructor(x, y, d, stopPoint, speed, imgs) {
+  constructor(x, y, d, stopPoint, imgs) {
     super(x, y, d, 100, imgs);
     this.stopPoint = stopPoint;
-    this.speed = speed;
   }
   
-  update() {
-    if (frameCount % 20 === 0) {  // change 10 to control speed
-      this.frameIndex = (this.frameIndex + 1) % this.imgs.length;
-    }
+  update(speed) {
+    super.update();
     
     // pipes always go from right to left
     if ((this.x != this.stopPoint) && 
         (this.x - this.stopPoint > 0) == 
-        ((this.x + this.speed) - this.stopPoint > 0)) {
-      this.x += this.speed; 
+        ((this.x + speed) - this.stopPoint > 0)) {
+      this.x += speed; 
     } else {
       this.x = this.stopPoint;
     }
@@ -84,44 +105,22 @@ class InvasivePlant extends Plant {
   draw() {
     super.draw();
   }
-  
-  circleEdgeDist(x, y, d) {
-    return this.circleEdgeDist2(this.x, this.y, this.d, x, y, d);
-  }
-  
-  circleEdgeDist2(x1, y1, d1, x2, y2, d2) {
-    let centerDist = dist(x1, y1, x2, y2);
-    
-    let edgeDist = centerDist - ((d1 + d2) / 2);
-    return max(0, edgeDist);
-  }
-  
-  pos2Plant(x, y, d, speed) {
-    let currDist = this.circleEdgeDist(x, y, d);
-    if (currDist == 0) {
-      return 0;
-    } else if (currDist < 
-        this.circleEdgeDist2(speed + this.x, 
-                       this.y, this.d, x, y, d)) {
-      return -1 * currDist;
-    } else {
-      return currDist;
-    }
-  }
+
 }
 
 class PlantRow {
-  constructor(y, diameter, isRight, stopPoint, index) {
+  constructor(y, diameter, dir, stopPoint, index) {
     this.stopPoint = stopPoint;
     this.d = diameter;
     this.y = y;
     this.plants = [];
-    if (isRight) {
+    this.dir = dir;
+
+    // set start point right off screen
+    if (dir < 0) {
       this.xStart = width + (this.d / 2);
-      this.speed = -1;
     } else {
       this.xStart = - (this.d / 2);
-      this.speed = 1;
     } 
     this.index = index;
     
@@ -130,7 +129,7 @@ class PlantRow {
   addPlant() {
     let invasiveKeys = Object.keys(invasiveImgs);
     let imgs = invasiveImgs[invasiveKeys[this.index % invasiveKeys.length]];
-    this.plants.push(new InvasivePlant(this.xStart, this.y, this.d, this.stopPoint, this.speed, imgs));
+    this.plants.push(new InvasivePlant(this.xStart, this.y, this.d, this.stopPoint, imgs));
   }
   
   damage(x, y, d, magnitude) {
@@ -138,7 +137,7 @@ class PlantRow {
     // for each plant -> check if it is in damage radius
     for (let i = 0; i < this.plants.length; i ++) {
       let currPlant = this.plants[i];
-      let pos2Plant = currPlant.pos2Plant(x, y, d, this.speed);
+      let pos2Plant = currPlant.pos2Plant(x, y, d, this.dir);
       if (pos2Plant == 0) {
         // plant takes damage
         currPlant.damage(magnitude);
@@ -152,14 +151,17 @@ class PlantRow {
     }
     
     for (let i = currDead.length - 1; i >= 0; i--) {
+      console.log(`removing dead plant!`)
+      console.log(`row before ${this.plants}`)
       this.plants.splice(currDead[i], 1);
+      console.log(`row after ${this.plants}`)
     }
   }
   
-  update() {
+  update(speed) {
     // console.log(this.stopPoint);
     for (let i = 0; i < this.plants.length; i ++) {
-      this.plants[i].update();
+      this.plants[i].update(speed);
     }
   }
   
@@ -178,18 +180,6 @@ class PlantRow {
   }
   
   draw() {
-    // noFill();
-    // stroke(255, 0, 0, 80);
-    // push();
-    // if (this.index % 2 === 0) {
-    //   fill("#62B46A");
-    // } else {
-    //   fill("#72CA76");
-    // }
-    // noStroke();
-    // rect(0, this.y - this.d / 2, width, this.d);
-    // pop();
-    
     for (let i = 0; i < this.plants.length; i ++) {
       this.plants[i].draw();
     }
