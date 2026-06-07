@@ -151,10 +151,7 @@ class PlantRow {
     }
     
     for (let i = currDead.length - 1; i >= 0; i--) {
-      console.log(`removing dead plant!`)
-      console.log(`row before ${this.plants}`)
       this.plants.splice(currDead[i], 1);
-      console.log(`row after ${this.plants}`)
     }
   }
   

@@ -9,7 +9,7 @@ TODOs:
 
 // prevent elements from being on the edge of the screen
 let _screenPadding = 10;
-let _landStart = 100;
+let _landStart = 150;
 
 // serial
 let serialOptions = { baudRate: 115200  };
@@ -44,6 +44,7 @@ let _tutorialL;
 
 // native plant state
 let garden;
+_selectedPlant = null;
 
 // attack timer
 let prevAttackTime = 0;
@@ -51,7 +52,7 @@ const attackTimerLength = 500;  // 1 second
 
 // wave timer
 let prevWaveTime = 0;
-const waveTimerLength = 5000;
+const waveTimerLength = 10000;
 
 // game play timer
 let gamePlayTime = 0;
@@ -180,8 +181,6 @@ function draw() {
   
   if (_gameState == GAME_MENU) {
     gameMenu();
-  } else if (_gameState == GAME_PLAY_PLANTING) {
-    gamePlayPlanting();
   } else if (_gameState == GAME_PLAY_INVASION) {
     gamePlay();
   } else if (_gameState == GAME_PAUSE) {
@@ -195,6 +194,10 @@ function draw() {
   scale(-1, 1);
   image(bushes[i], -width, _landStart/1.2, bushes[i].width / 2.4, bushes[i].height / 2.4);
   scale(-1, 1);
+
+  if (_gameState == GAME_PLAY_PLANTING) {
+    gamePlayPlanting();
+  }
 
   updateShears();
   drawShears();
@@ -243,7 +246,22 @@ function gamePlaySetup() {
   gamePlayTime = millis();
 }
 
+function invasionSetup() {
+  _selectedPlant = null;
+  _gameState = GAME_PLAY_INVASION;
+  // reset timers
+  let prevAttackTime = 0;
+  let prevWaveTime = 0;
+
+  // reset wave
+  wave = 3;
+  gamePlayTime = millis();
+}
+
 function gamePlayPlanting() {
+  if (_selectedPlant) {
+    drawPlantCard(20, 20, _selectedPlant, nativeImgs[_selectedPlant][0]);
+  }
   garden.draw();
   drawScore();
 }
@@ -251,7 +269,6 @@ function gamePlayPlanting() {
 function gamePlay() {
   // Draw the webcam video
   // image(video, 0, 0, width, height);
-  console.log(`here!`)
   if (_invasiveR.timeSinceWaveEnd() > waveTimerLength) {
     console.log(`wave ${wave}`)
     _invasiveR.generateWave(wave);
@@ -367,11 +384,11 @@ function shearsCut(shears, invasives) {
   }
 }
 
-function plant(plantName) {
-  if (_gameState == GAME_PLAY_PLANTING) {
-    garden.plant(plantName);
+function plant() {
+  if (_gameState == GAME_PLAY_PLANTING && _selectedPlant) {
+    garden.plant(_selectedPlant);
     if (garden.currPlantingRow == _numRows) {
-      _gameState = GAME_PLAY_INVASION;
+      invasionSetup();
     }
   }
 }
@@ -413,7 +430,8 @@ function keyPressed() {
       serial.connectAndOpen(null, serialOptions);
     }
   } else if (key === 'p') {
-    plant('salal');
+    _selectedPlant= 'salal';
+    plant();
   }
 }
 
@@ -467,11 +485,6 @@ async function connectBLE() {
 }
 
 function playCutSound() {
-  // osc.start();
-  // osc.freq(800);
-  // osc.amp(0.5, 0.01);
-  // osc.amp(0, 0.1, 0.05);
-
   cutSound.play(0, 1, 1, 1.5, 1);
 }
 
@@ -559,7 +572,9 @@ function onSerialConnectionClosed(eventSender) {
 function onSerialDataReceived(eventSender, newData) {
   console.log("onSerialDataReceived", newData);
   
-  if (!newData.startsWith("#")) {
-      plant(newData);
+  if (newData === "plant" && _selectedPlant) {
+      plant();
+  } else {
+    _selectedPlant = newData;
   }
 }

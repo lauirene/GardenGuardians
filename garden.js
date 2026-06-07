@@ -4,12 +4,6 @@ class Garden {
     this.plants = new Array(numPlants);
 
     this.currPlantingRow = 0;
-    
-    // let nativeKeys = Object.keys(nativeImgs);
-    // for (let i = 0; i < numPlants; i++) {
-    //   let imgs = imageMap[nativeKeys[i % nativeKeys.length]];
-    //   this.plants[i] = new NativePlant((i * spacing) + startY + _diameter/2, _diameter, imgs);
-    // }
   }
 
   plant(plantName) {
