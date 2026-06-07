@@ -61,7 +61,8 @@ let hands = [];
 let _shearsR;
 let _shearsL;
 
-let osc;
+// let osc;
+let cutSound;
 
 let clouds = [];
 
@@ -70,7 +71,10 @@ let shearsClosedImg;
 let invasiveImgs = {};
 let nativeImgs = {};
 
+let bushes = [];
+
 function preload() {
+  cutSound = loadSound('sounds/cut.mp3');
   invasiveImgs['blackberry'] =
     [loadImage('images/Invasive_Blackberry.png'), 
      loadImage('images/Invasive_Blackberry2.png')
@@ -96,6 +100,9 @@ function preload() {
     loadImage('images/Native_Camas.png'),
     loadImage('images/Native_Camas2.png')
   ];
+
+  bushes.push(loadImage('images/Bush.svg'));
+  bushes.push(loadImage('images/Bush2.svg'));
 
   shearsImg = loadImage('images/ShearsOpen.png');
   shearsClosedImg = loadImage('images/ShearsClosed.png');
@@ -153,9 +160,9 @@ function draw() {
   drawClouds();
 
   noTint();
-  stroke("#62B46A");
+  stroke("#5AA553");
   strokeWeight(10);
-  fill("#8CCA72");
+  fill("#84C25A");
   let hillRise = _landStart * 0.1;
   beginShape();
   vertex(0, height);
@@ -174,6 +181,12 @@ function draw() {
   } else if (_gameState == GAME_OVER) {
     gameOver();
   }
+
+  let i = floor(frameCount / 20) % bushes.length;
+  image(bushes[i], 0, _landStart/1.2, bushes[i].width / 2.4, bushes[i].height / 2.4);
+  scale(-1, 1);
+  image(bushes[i], -width, _landStart/1.2, bushes[i].width / 2.4, bushes[i].height / 2.4);
+  scale(-1, 1);
 
   updateShears();
   drawShears();
@@ -380,6 +393,7 @@ function mouseClicked() {
   // } 
   // else {
   //   _shearsL.setCut();
+  //   shearsCut(_shearsL, _invasiveL);
   //   playCutSound();
   // }
   
@@ -420,10 +434,12 @@ async function connectBLE() {
 }
 
 function playCutSound() {
-  osc.start();
-  osc.freq(800);
-  osc.amp(0.5, 0.01);
-  osc.amp(0, 0.1, 0.05);
+  // osc.start();
+  // osc.freq(800);
+  // osc.amp(0.5, 0.01);
+  // osc.amp(0, 0.1, 0.05);
+
+  cutSound.play(0, 1, 1, 1.5, 1);
 }
 
 function createClouds() {
