@@ -1,4 +1,11 @@
-function drawPlantCard(x, y, plantName, plantImage, textDescription = null) {
+const plantDescriptions = {
+  'salal': "The single best ground cover for northwest gardens, salal is a do it all plant. It will also grow where almost nothing else will.",
+  'dogwood': "For best gardening effect, prune these an inch above ground in the early spring as the red begins to darken and just before new buds begin to appear.",
+  'camas': "Perennial groundcover with beautiful spikes of bluish purple flower clusters. Spring blooming."
+};
+const citation = "Source: King County Native Plant Guide";
+
+function drawPlantCard(x, y, plantName, plantImage) {
   const cardWidth = 300;
   const cardHeight = 400;
   const padding = 20;
@@ -54,19 +61,27 @@ function drawPlantCard(x, y, plantName, plantImage, textDescription = null) {
   );
 
   // Description (optional)
-  if (textDescription) {
-    textSize(14);
-    textStyle(NORMAL);
-    fill(60);
-
-    text(
-      textDescription,
-      x + padding,
-      titleY + 35,
-      cardWidth - padding * 2,
-      cardHeight - imageHeight - 70
-    );
-  }
+  textSize(16);
+  textStyle(NORMAL);
+  fill(60);
+  console.log(`${plantDescriptions[plantName]}\n(${citation})`)
+  text(
+    plantDescriptions[plantName],
+    x + padding,
+    titleY + 35 + imagePadding,
+    cardWidth - padding * 2,
+    cardHeight - drawH - 70
+  );
+  
+  textSize(10);
+  textStyle(BOLD);
+  text(
+    citation,
+    x + padding,
+    y + cardHeight - padding - 10,
+    cardWidth - padding * 2,
+    10
+  )
 
   pop();
 }

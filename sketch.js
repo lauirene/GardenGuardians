@@ -159,6 +159,8 @@ function getSpacing() {
 }
 
 function draw() {
+  // Draw the webcam video
+  // image(video, 0, 0, width, height);
   // background("#72CA76");
   push();
   noStroke();
@@ -267,8 +269,6 @@ function gamePlayPlanting() {
 }
 
 function gamePlay() {
-  // Draw the webcam video
-  // image(video, 0, 0, width, height);
   if (_invasiveR.timeSinceWaveEnd() > waveTimerLength) {
     console.log(`wave ${wave}`)
     _invasiveR.generateWave(wave);
@@ -430,8 +430,13 @@ function keyPressed() {
       serial.connectAndOpen(null, serialOptions);
     }
   } else if (key === 'p') {
-    _selectedPlant= 'salal';
     plant();
+  } else if (key === 'q') {
+    _selectedPlant= 'salal';
+  } else if (key === 'w') {
+    _selectedPlant= 'dogwood';
+  } else if (key === 'e') {
+    _selectedPlant= 'camas';
   }
 }
 
