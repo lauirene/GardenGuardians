@@ -3,6 +3,9 @@
 #include <BLEUtils.h>
 #include <BLE2902.h>
 
+// Change to "ShearRight" before flashing the second controller
+#define DEVICE_NAME  "ShearLeft"
+
 #define SERVICE_UUID "6E400001-B5A3-F393-E0A9-E50E24DCCA9E"
 #define CHAR_UUID_TX "6E400003-B5A3-F393-E0A9-E50E24DCCA9E"
 
@@ -33,7 +36,7 @@ class MyServerCallbacks : public BLEServerCallbacks {
 void setup() {
   Serial.begin(115200);
   delay(1000);
-  BLEDevice::init("MyESP32");
+  BLEDevice::init(DEVICE_NAME);
   pServer = BLEDevice::createServer();
   pServer->setCallbacks(new MyServerCallbacks());
   BLEService *pService = pServer->createService(SERVICE_UUID);

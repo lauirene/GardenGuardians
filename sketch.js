@@ -437,6 +437,10 @@ function keyPressed() {
     _selectedPlant= 'dogwood';
   } else if (key === 'e') {
     _selectedPlant= 'camas';
+  } else if (key === '1') {
+    connectBLE('L');
+  } else if (key === '2') {
+    connectBLE('R');
   }
 }
 
@@ -444,15 +448,6 @@ function keyPressed() {
  * Called automatically by the browser through p5.js when mouse clicked
  */
 function mouseClicked() {
-  // if (!bleDevice || !bleDevice.gatt.connected) {
-  //   connectBLE();
-  // } 
-  // else {
-  //   _shearsL.setCut();
-  //   shearsCut(_shearsL, _invasiveL);
-  //   playCutSound();
-  // }
-  
   _shearsL.setCut();
   shearsCut(_shearsL, _invasiveL);
   _shearsR.setCut();
@@ -460,33 +455,38 @@ function mouseClicked() {
   playCutSound();
 }
   
-function onBLEMessage(value) {
-  let msg = value.trim();
-  // // console.log(msg);
-  if(msg === "Cut") {
+function onBLEMessage(value, side) {
+  if (value.trim() !== "Cut") return;
+  if (side === 'L') {
+    _shearsL.setCut();
+    shearsCut(_shearsL, _invasiveL);
+  } else {
     _shearsR.setCut();
     shearsCut(_shearsR, _invasiveR);
-    playCutSound();
   }
+  playCutSound();
 }
 
 const SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
 const TX_UUID = "6e400003-b5a3-f393-e0a9-e50e24dcca9e";
-let bleDevice, txChar;
+let bleDeviceL, bleDeviceR;
 
-
-async function connectBLE() {
-  bleDevice = await navigator.bluetooth.requestDevice({
-    filters: [{ name: "MyESP32" }],
+async function connectBLE(side) {
+  const name = side === 'L' ? "MyESP32" : "Shears_B";
+  const device = await navigator.bluetooth.requestDevice({
+    filters: [{ name }],
     optionalServices: [SERVICE_UUID]
   });
-  const server  = await bleDevice.gatt.connect();
+  const server  = await device.gatt.connect();
   const service = await server.getPrimaryService(SERVICE_UUID);
-  txChar        = await service.getCharacteristic(TX_UUID);
+  const txChar  = await service.getCharacteristic(TX_UUID);
   await txChar.startNotifications();
   txChar.addEventListener("characteristicvaluechanged", (e) => {
-    onBLEMessage(new TextDecoder().decode(e.target.value).trim());
+    onBLEMessage(new TextDecoder().decode(e.target.value).trim(), side);
   });
+  if (side === 'L') bleDeviceL = device;
+  else              bleDeviceR = device;
+  console.log(`${name} connected`);
 }
 
 function playCutSound() {
