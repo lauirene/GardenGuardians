@@ -64,7 +64,6 @@ function drawPlantCard(x, y, plantName, plantImage) {
   textSize(16);
   textStyle(NORMAL);
   fill(60);
-  console.log(`${plantDescriptions[plantName]}\n(${citation})`)
   text(
     plantDescriptions[plantName],
     x + padding,

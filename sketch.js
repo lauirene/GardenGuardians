@@ -529,9 +529,6 @@ function setupSerial() {
   serial.on(SerialEvents.CONNECTION_CLOSED, onSerialConnectionClosed);
   serial.on(SerialEvents.DATA_RECEIVED, onSerialDataReceived);
   serial.on(SerialEvents.ERROR_OCCURRED, onSerialErrorOccurred);
-
-  // If we have previously approved ports, attempt to connect with them
-  serial.autoConnectAndOpenPreviouslyApprovedPort(serialOptions);
 }
 
 async function serialWrite() {
