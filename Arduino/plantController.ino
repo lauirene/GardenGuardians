@@ -18,14 +18,22 @@ const int PLANT_BUTTON = 7;
 // servo for opening and closing device
 const int SERVO_PIN = 13;
 
-// The shake threshold in m/s^2. 
+// The shake threshold in m/s^2.
 // Adjust this value: 15-20 for light shakes, 30+ for aggressive shakes.
 // citation: AI Overview
-const float SHAKE_THRESHOLD = 25.0; 
+const float SHAKE_THRESHOLD = 15.0;
+
+const int SHAKES_REQUIRED = 4;
+const unsigned long SHAKE_WINDOW_MS = 2000;  // all shakes must happen within this window
+const unsigned long SHAKE_DEBOUNCE_MS = 300; // min time between counted shakes
 
 Servo myServo;
 int species_selected = -1;
 bool can_plant = false;
+
+int shakeCount = 0;
+unsigned long firstShakeTime = 0;
+unsigned long lastShakeTime = 0;
 
 void setup(void)
 {
@@ -83,25 +91,42 @@ void loop(void)
 }
 
 bool checkShake() {
-  if (species_selected != -1) {
-    sensors_event_t event;
-    accel.getEvent(&event);
+  if (species_selected == -1) return false;
 
-    // Calculate the magnitude of acceleration in 3D: sqrt(x^2 + y^2 + z^2)
-    float x = event.acceleration.x;
-    float y = event.acceleration.y;
-    float z = event.acceleration.z;
-    
-    float totalAcceleration = sqrt(sq(x) + sq(y) + sq(z));
+  sensors_event_t event;
+  accel.getEvent(&event);
 
-    // Check if the total acceleration exceeds our shake threshold
-    if (totalAcceleration > SHAKE_THRESHOLD) {
+  float x = event.acceleration.x;
+  float y = event.acceleration.y;
+  float z = event.acceleration.z;
+  float totalAcceleration = sqrt(sq(x) + sq(y) + sq(z));
+
+  if (totalAcceleration > SHAKE_THRESHOLD) {
+    unsigned long now = millis();
+
+    // debounce: ignore if too soon after last counted shake
+    if (now - lastShakeTime < SHAKE_DEBOUNCE_MS) return false;
+
+    // reset window if it expired
+    if (shakeCount > 0 && now - firstShakeTime > SHAKE_WINDOW_MS) {
+      shakeCount = 0;
+    }
+
+    if (shakeCount == 0) firstShakeTime = now;
+    lastShakeTime = now;
+    shakeCount++;
+
+    if (shakeCount >= SHAKES_REQUIRED) {
       Serial.println("plant");
       species_selected = -1;
       can_plant = false;
+      shakeCount = 0;
       close();
+    } else {
+      Serial.println("shake");
     }
   }
+  return false;
 }
 
 void open() {

@@ -69,6 +69,9 @@ let _shearsL;
 
 // let osc;
 let cutSound;
+let dirtSound;
+let rattleSound;
+let bgMusic;
 
 let clouds = [];
 
@@ -80,7 +83,13 @@ let nativeImgs = {};
 let bushes = [];
 
 function preload() {
-  cutSound = loadSound('sounds/cut.mp3');
+  cutSound = loadSound('sounds/CutSound.m4a');
+  cutSound.setVolume(0.5);
+  bgMusic = loadSound('sounds/BackgroundMusic.mp3');
+  dirtSound = loadSound('sounds/DirtSound.m4a');
+  dirtSound.setVolume(1.2);
+  rattleSound = loadSound('sounds/RattleSound.m4a');
+  rattleSound.setVolume(1.5);
   invasiveImgs['blackberry'] =
     [loadImage('images/Invasive_Blackberry.png'), 
      loadImage('images/Invasive_Blackberry2.png')
@@ -133,6 +142,8 @@ function setup() {
   setupGameStart();
 
   osc = new p5.Oscillator('sine');
+  bgMusic.setVolume(0.4);
+  bgMusic.loop();
   setupSerial();
 }
 
@@ -322,6 +333,7 @@ function gameOver() {
 
 function createShears() {
   _shearsL = new Shears(0, width / 2, _diameter, damage);
+  _shearsL.mirrored = true;
   _shearsR = new Shears(width / 2, width, _diameter, damage);
 }
 
@@ -490,7 +502,24 @@ async function connectBLE(side) {
 }
 
 function playCutSound() {
-  cutSound.play(0, 1, 1, 1.5, 1);
+  cutSound.play();
+}
+
+function playPickSound() {
+  // rising chirp: species selected
+  osc.start();
+  osc.freq(500);
+  osc.amp(0.2, 0.01);
+  osc.freq(900, 0.12);
+  osc.amp(0, 0.08, 0.1);
+}
+
+function playShakeSound() {
+  rattleSound.play();
+}
+
+function playPlantSound() {
+  dirtSound.play();
 }
 
 function createClouds() {
@@ -573,10 +602,14 @@ function onSerialConnectionClosed(eventSender) {
  */
 function onSerialDataReceived(eventSender, newData) {
   console.log("onSerialDataReceived", newData);
-  
-  if (newData === "plant" && _selectedPlant) {
-      plant();
+
+  if (newData === "plant") {
+    if (_selectedPlant) plant();
+    playPlantSound();
+  } else if (newData === "shake") {
+    playShakeSound();
   } else {
     _selectedPlant = newData;
+    playPickSound();
   }
 }

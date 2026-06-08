@@ -32,14 +32,18 @@ class Shears {
   
   draw() {
     imageMode(CENTER);
-    
-    if(this.isCutting()){
-      image(shearsClosedImg, this.x, this.y, this.d, this.d);
+    push();
+    translate(this.x, this.y);
+    if (this.mirrored) scale(-1, 1);
+
+    if (this.isCutting()) {
+      image(shearsClosedImg, 0, 0, this.d, this.d);
     } else {
       this.cutImgStart = 0;
-      image(shearsImg, this.x, this.y, this.d, this.d);
+      image(shearsImg, 0, 0, this.d, this.d);
     }
-    
+
+    pop();
     imageMode(CORNER);
   }
 }
