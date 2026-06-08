@@ -444,20 +444,19 @@ function keyPressed() {
  * Called automatically by the browser through p5.js when mouse clicked
  */
 function mouseClicked() {
-  // if (!bleDevice || !bleDevice.gatt.connected) {
-  //   connectBLE();
-  // } 
-  // else {
-  //   _shearsL.setCut();
-  //   shearsCut(_shearsL, _invasiveL);
-  //   playCutSound();
-  // }
+  if (!bleDevice || !bleDevice.gatt.connected) {
+    connectBLE();
+  } else {
+    _shearsL.setCut();
+    shearsCut(_shearsL, _invasiveL);
+    playCutSound();
+  }
   
-  _shearsL.setCut();
-  shearsCut(_shearsL, _invasiveL);
-  _shearsR.setCut();
-  shearsCut(_shearsR, _invasiveR);
-  playCutSound();
+  // _shearsL.setCut();
+  // shearsCut(_shearsL, _invasiveL);
+  // _shearsR.setCut();
+  // shearsCut(_shearsR, _invasiveR);
+  // playCutSound();
 }
   
 function onBLEMessage(value) {
@@ -477,7 +476,7 @@ let bleDevice, txChar;
 
 async function connectBLE() {
   bleDevice = await navigator.bluetooth.requestDevice({
-    filters: [{ name: "MyESP32" }],
+    filters: [{ name: "Shears_B" }],
     optionalServices: [SERVICE_UUID]
   });
   const server  = await bleDevice.gatt.connect();
