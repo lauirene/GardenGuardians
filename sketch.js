@@ -56,7 +56,7 @@ const waveTimerLength = 10000;
 
 // game play timer
 let gamePlayTime = 0;
-const gamePlayLength = 2 * 60000; // max 2 min play time
+const gamePlayLength = 1.5 * 60000; // max 2 min play time
 
 // AI controller
 let handPose;
@@ -272,8 +272,17 @@ function invasionSetup() {
 }
 
 function gamePlayPlanting() {
+  let x = width / 2 + _diameter;
+  let y = height / 5;
+  let cardPadding = 7;
+  fill(0);
+  textAlign(LEFT);
+  textSize(40);
   if (_selectedPlant) {
     drawPlantCard(20, 20, _selectedPlant, nativeImgs[_selectedPlant][0]);
+    text(`Open and shake box to\nplant seeds`, x+cardPadding, y+cardPadding);
+  } else {
+    text(`Use the planting box to\nselect seeds`, x+cardPadding, y+cardPadding);
   }
   garden.draw();
   drawScore();
@@ -325,9 +334,9 @@ function gameOver() {
   textSize(30);
   score = garden.getHealth();
   if (score == 0) {
-    text(`GAME OVER\ncut anywhere to try again`, width / 2, height / 2);
+    text(`GAME OVER\npress r to play again`, width / 2, height / 2);
   } else {
-    text(`Your garden survives!\nscore: ${score}\nut anywhere to try again`, width / 2, height/2);
+    text(`Your garden survives!\nscore: ${score}\npress r to play again`, width / 2, height/2);
   }
 }
 
@@ -391,14 +400,13 @@ function shearsCut(shears, invasives) {
         gamePlaySetup();
       }
     }
-  } else if (_gameState == GAME_OVER) {
-    setupGameStart();
   }
 }
 
 function plant() {
   if (_gameState == GAME_PLAY_PLANTING && _selectedPlant) {
     garden.plant(_selectedPlant);
+    _selectedPlant = null;
     if (garden.currPlantingRow == _numRows) {
       invasionSetup();
     }
@@ -453,6 +461,8 @@ function keyPressed() {
     connectBLE('L');
   } else if (key === '2') {
     connectBLE('R');
+  } else if (key == 'r' && _gameState == GAME_OVER) {
+    setupGameStart();
   }
 }
 
